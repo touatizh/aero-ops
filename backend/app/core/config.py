@@ -45,8 +45,7 @@ class Settings(BaseSettings):
     # Comma-separated list of allowed origins
     CORS_ORIGINS: str = "http://localhost:5173"
 
-    @computed_field
-    @property
+    @computed_field @ property  # type: ignore[misc]
     def allowed_origins(self) -> list[str]:
         """Parses the CORS_ORIGINS string into a list."""
         if not self.CORS_ORIGINS:
@@ -62,7 +61,7 @@ class Settings(BaseSettings):
     )
 
 
-# Instanciation
+# Instantiation
 @lru_cache
 def get_settings() -> Settings:
     return Settings()  # type: ignore[call-arg]

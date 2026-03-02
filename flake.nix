@@ -91,7 +91,7 @@
                 cd frontend && npm install
                 echo "npm install complete."
               fi
-              
+
               # Start the Fish shell
               export LD_LIBRARY_PATH=${
                   pkgs.lib.makeLibraryPath [
