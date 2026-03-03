@@ -26,4 +26,10 @@ dependencies = [
 ]
 
 [dependency-groups]
-dev = ["httpx>=0.28.1", "pytest>=8.4.1"]
+dev = [
+  "httpx>=0.28.1",
+  "pytest>=8.4.1",
+  "ruff>=0.8.6",
+  "bandit>=1.7.10",
+  "safety>=3.2.11",
+]
