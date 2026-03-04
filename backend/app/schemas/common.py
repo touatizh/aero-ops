@@ -40,8 +40,10 @@ class TokenResponse(SQLModel):
     """JWT Token response"""
 
     access_token: str
-    token_type: str = "bearer"
-    expires_in: int  # seconds
+    access_expires_at: int
+    refresh_token: str
+    refresh_expires_at: int
+    refresh_token_jti: str
 
 
 class TokenData(SQLModel):
