@@ -8,5 +8,5 @@ class BaseModel(SQLModel):
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
 
     created_at: datetime = Field(
-        default_factory=lambda: datetime.now(UTC), nullable=False
+        default_factory=lambda: datetime.now(UTC).replace(tzinfo=None), nullable=False
     )
