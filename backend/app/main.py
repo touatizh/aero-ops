@@ -6,13 +6,34 @@ from slowapi import Limiter, _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
 from slowapi.util import get_remote_address
 
+from app.api.v1 import auth_router
 from app.core.config import settings
 from app.db.base import init_db
+from app.db.session import SessionLocal
+from app.models import Role
+from app.schemas import UserCreate
+from app.services.user_service import create_user, get_user_by_username
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     await init_db()
+    async with SessionLocal() as session:
+        user = await get_user_by_username(
+            session=session, username=settings.FIRST_SUPERUSER_USERNAME
+        )
+        if not user:
+            admin_user: UserCreate = UserCreate(
+                username=settings.FIRST_SUPERUSER_USERNAME,
+                password=settings.FIRST_SUPERUSER_PASSWORD.get_secret_value(),
+            )
+            try:
+                await create_user(session=session, user=admin_user, role=Role.ADMIN)
+            except Exception as e:
+                print("Unable to seed admin user.", e)
+            else:
+                print("Admin user seeded.")
+
     yield
 
 
@@ -32,12 +53,7 @@ app.add_middleware(
 
 # Add rate limiting
 app.state.limiter = limiter
-app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)  # type: ignore[arg-type]
 
 # Register routers
-# TODO : Include API routers here later
-
-
-@app.get("/healthcheck", tags=["Healthcheck"])
-async def healthcheck():
-    return {"message": "Welcome to AeroOps", "status": "Operational"}
+app.include_router(auth_router, prefix=settings.API_PREFIX)
