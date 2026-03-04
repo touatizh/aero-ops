@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 from enum import StrEnum
 from typing import TYPE_CHECKING
 
@@ -23,4 +21,7 @@ class User(BaseModel, table=True):
     is_active: bool = True
     role: Role = Field(default=Role.PI)
 
-    flights: list[Flight] = Relationship(back_populates="pilot")
+    flights: list[Flight] = Relationship(
+        back_populates="pilot",
+        sa_relationship_kwargs={"foreign_keys": "[Flight.pilot_id]"},
+    )
