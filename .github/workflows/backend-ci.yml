@@ -143,8 +143,9 @@ jobs:
         env:
           DATABASE_URL: postgresql+asyncpg://postgres:postgres@localhost:5432/aeroops_test
           REDIS_URL: redis://localhost:6379/0
-          SECRET_KEY: test-secret-key-for-ci
-          ENVIRONMENT: test
+          # FIX: Add the missing required keys (use dummy values for CI)
+          JWT_SECRET_KEY: "test-secret-key-for-ci-jwt"
+          FIRST_SUPERUSER_PASSWORD: "test-admin-password"
         run: uv run pytest -v --tb=short
 
       - name: Upload test results
