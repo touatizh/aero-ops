@@ -43,7 +43,7 @@ def decode_jwt(token: str, options: dict | None = None) -> dict:
         raise HTTPException(status_code=401, detail=str(e))
 
 
-def generate_user_tokens(user_id: int | str, user_role: str) -> dict[str, str | int]:
+def generate_user_tokens(user_id: str, user_role: str) -> dict[str, str | int]:
     """Generate access and refresh tokens for a user."""
     access_token, access_exp = _get_access_token(user_id, user_role)
     refresh_token, refresh_exp, jti = _get_refresh_token(user_id)
@@ -56,7 +56,7 @@ def generate_user_tokens(user_id: int | str, user_role: str) -> dict[str, str | 
     }
 
 
-def _get_access_token(user_id: int | str, user_role: str) -> tuple[str, int]:
+def _get_access_token(user_id: str, user_role: str) -> tuple[str, int]:
     """Generate an access token for the user."""
     now = datetime.now(UTC)
     exp = now + timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE)
@@ -76,7 +76,7 @@ def _get_access_token(user_id: int | str, user_role: str) -> tuple[str, int]:
     return token, int(exp.timestamp())
 
 
-def _get_refresh_token(user_id: int | str) -> tuple[str, int, str]:
+def _get_refresh_token(user_id: str) -> tuple[str, int, str]:
     """Generate a refresh token for the user."""
     now = datetime.now(UTC)
     exp = now + timedelta(days=settings.REFRESH_TOKEN_EXPIRE)
