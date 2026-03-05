@@ -154,18 +154,3 @@ jobs:
         with:
           name: pytest-results
           path: backend/pytest-results/
-
-  summary:
-    name: CI Summary
-    runs-on: ubuntu-latest
-    needs: [lint-and-format, security, test]
-    if: always()
-
-    steps:
-      - name: Check job statuses
-        run: |
-          echo "### CI Results Summary" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_STEP_SUMMARY
-          echo "- Lint and Format: ${{ needs.lint-and-format.result }}" >> $GITHUB_STEP_SUMMARY
-          echo "- Security Checks: ${{ needs.security.result }}" >> $GITHUB_STEP_SUMMARY
-          echo "- Tests: ${{ needs.test.result }}" >> $GITHUB_STEP_SUMMARY
