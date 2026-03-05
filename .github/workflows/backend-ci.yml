@@ -143,8 +143,9 @@ jobs:
         env:
           DATABASE_URL: postgresql+asyncpg://postgres:postgres@localhost:5432/aeroops_test
           REDIS_URL: redis://localhost:6379/0
-          SECRET_KEY: test-secret-key-for-ci
-          ENVIRONMENT: test
+          # FIX: Add the missing required keys (use dummy values for CI)
+          JWT_SECRET_KEY: "test-secret-key-for-ci-jwt"
+          FIRST_SUPERUSER_PASSWORD: "test-admin-password"
         run: uv run pytest -v --tb=short
 
       - name: Upload test results
@@ -153,18 +154,3 @@ jobs:
         with:
           name: pytest-results
           path: backend/pytest-results/
-
-  summary:
-    name: CI Summary
-    runs-on: ubuntu-latest
-    needs: [lint-and-format, security, test]
-    if: always()
-
-    steps:
-      - name: Check job statuses
-        run: |
-          echo "### CI Results Summary" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_STEP_SUMMARY
-          echo "- Lint and Format: ${{ needs.lint-and-format.result }}" >> $GITHUB_STEP_SUMMARY
-          echo "- Security Checks: ${{ needs.security.result }}" >> $GITHUB_STEP_SUMMARY
-          echo "- Tests: ${{ needs.test.result }}" >> $GITHUB_STEP_SUMMARY
