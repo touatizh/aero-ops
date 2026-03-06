@@ -1,23 +1,13 @@
 import pytest
 from app.core.config import settings
-from app.services.user_service import create_user
-from app.schemas.user import UserCreate
-from app.db.session import SessionLocal
 
 @pytest.mark.asyncio
-async def test_login_success(client):
-    async with SessionLocal() as session:
-        test_user: UserCreate = UserCreate(
-            username="test user",
-            password="testpassword123",
-        )
-        await create_user(session=session, user=test_user)
-
+async def test_login_success(client, test_pilot):
     response = await client.post(
         "/api/auth/login",
         json={
-            "username": test_user.username,
-            "password": test_user.password,
+            "username": test_pilot.username,
+            "password": "password123",
         },
     )
     assert response.status_code == 200
