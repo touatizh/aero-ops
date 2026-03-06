@@ -11,4 +11,4 @@ class AuditLog(BaseModel, table=True):
     actor_id: UUID
     target_id: UUID
     action: str
-    details: dict | None = Field(sa_type=JSONB, nullable=True)
+    details: dict | None = Field(sa_type=JSONB, nullable=True, default=None)
