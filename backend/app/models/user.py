@@ -16,6 +16,7 @@ class Role(StrEnum):
 
 
 class User(BaseModel, table=True):
+    __tablename__ = "users"  # type: ignore
     username: str = Field(unique=True)
     hashed_pwd: str
     is_active: bool = True

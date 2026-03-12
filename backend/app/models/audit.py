@@ -7,6 +7,7 @@ from app.models.base import BaseModel
 
 
 class AuditLog(BaseModel, table=True):
+    __tablename__ = "audit_logs"  # type: ignore
     actor_id: UUID
     target_id: UUID
     action: str
