@@ -21,6 +21,7 @@ class AircraftCategory(StrEnum):
 
 
 class Flight(BaseModel, table=True):
+    __tablename__ = "flight_logs"  # type: ignore
     #! Business fields
     dof: datetime
     duration_min: int = Field(gt=0.0)
@@ -31,11 +32,11 @@ class Flight(BaseModel, table=True):
     # if voided
     voided_at: datetime | None
     void_reason: str | None
-    voided_by_id: UUID | None = Field(foreign_key="user.id")
+    voided_by_id: UUID | None = Field(foreign_key="users.id")
 
     # IDs
-    pilot_id: UUID = Field(foreign_key="user.id")
-    created_by_id: UUID = Field(foreign_key="user.id")
+    pilot_id: UUID = Field(foreign_key="users.id")
+    created_by_id: UUID = Field(foreign_key="users.id")
 
     # Relationships
     pilot: User = Relationship(
