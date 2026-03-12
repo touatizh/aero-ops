@@ -23,15 +23,16 @@ async def client():
 
 
 @pytest.fixture(scope="function")
-async def test_pilot():
+async def test_pilot(client):
     """Creates a test pilot and returns the user object."""
     async with SessionLocal() as session:
         user_in = UserCreate(username="test_pilot", password="password123")
         user = await create_user(session, user_in, Role.PI)
         yield user
 
+
 @pytest.fixture(scope="function")
-async def test_ops():
+async def test_ops(client):
     """Creates a test ops user and returns the user object."""
     async with SessionLocal() as session:
         user_in = UserCreate(username="test_ops", password="password123")
@@ -42,9 +43,37 @@ async def test_ops():
 @pytest.fixture
 async def auth_headers(client):
     async def _auth(user):
-        res = await client.post("/api/auth/login", json={
-            "username": user.username,
-            "password": "password123"
-        })
+        res = await client.post(
+            "/api/auth/login",
+            json={"username": user.username, "password": "password123"},
+        )
         return {"Authorization": f"Bearer {res.json()['access_token']}"}
+
     return _auth
+
+
+@pytest.fixture(scope="function")
+async def pending_flight(client, test_pilot, auth_headers):
+    headers = await auth_headers(test_pilot)
+    flight = await client.post(
+        "/api/flights/",
+        json={
+            "dof": "2026-03-13T03:51:31.575",
+            "duration_min": 100,
+            "aircraft_category": "Helicopter",
+            "notes": "STD NVG TRAINING",
+        },
+        headers=headers,
+    )
+    return flight.json()
+
+
+@pytest.fixture(scope="function")
+async def approved_flight(client, auth_headers, test_ops, pending_flight):
+    headers = await auth_headers(test_ops)
+    approved = await client.post(
+        f"/api/flights/{pending_flight.get('id')}/approve",
+        json={},
+        headers=headers,
+    )
+    return approved.json()
