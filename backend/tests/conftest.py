@@ -77,3 +77,16 @@ async def approved_flight(client, auth_headers, test_ops, pending_flight):
         headers=headers,
     )
     return approved.json()
+
+
+@pytest.fixture(scope="function")
+async def voided_flight(client, auth_headers, test_ops, pending_flight):
+    headers = await auth_headers(test_ops)
+    voided = await client.post(
+        f"/api/flights/{pending_flight.get('id')}/void",
+        json={
+            "void_reason": "Wrong flight date"
+        },
+        headers=headers,
+    )
+    return voided.json()

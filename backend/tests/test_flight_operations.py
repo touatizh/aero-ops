@@ -89,3 +89,59 @@ async def test_ops_approve_non_existent_flight(
         headers=headers,
     )
     assert approved.status_code == 404
+
+
+@pytest.mark.asyncio
+async def test_ops_void_flight(client, auth_headers, test_ops, pending_flight):
+    headers = await auth_headers(test_ops)
+    voided = await client.post(
+        f"/api/flights/{pending_flight.get('id')}/void",
+        json={"void_reason": "Wrong flight date"},
+        headers=headers,
+    )
+    assert voided.status_code == 200
+    assert voided.json().get("status") == "Voided"
+
+
+@pytest.mark.asyncio
+async def test_pilot_void_flight(client, auth_headers, test_pilot, pending_flight):
+    headers = await auth_headers(test_pilot)
+    voided = await client.post(
+        f"/api/flights/{pending_flight.get('id')}/void",
+        json={"void_reason": "Wrong flight date"},
+        headers=headers,
+    )
+    assert voided.status_code == 403
+
+
+@pytest.mark.asyncio
+async def test_ops_void_already_voided_flight(
+    client, auth_headers, test_ops, voided_flight
+):
+    headers = await auth_headers(test_ops)
+    voided = await client.post(
+        f"/api/flights/{voided_flight.get('id')}/void",
+        json={
+            "void_reason": "Wrong flight date",
+        },
+        headers=headers,
+    )
+    assert voided.status_code == 400
+
+
+@pytest.mark.asyncio
+async def test_ops_void_non_existent_flight(
+    client,
+    auth_headers,
+    test_ops,
+):
+    headers = await auth_headers(test_ops)
+    fake_id = "2b05c58d-7680-434a-bb05-2cf85ef32966"
+    voided = await client.post(
+        f"/api/flights/{fake_id}/void",
+        json={
+            "void_reason": "Wrong timing",
+        },
+        headers=headers,
+    )
+    assert voided.status_code == 404
