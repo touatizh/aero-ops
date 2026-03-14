@@ -32,6 +32,14 @@ async def test_pilot(client):
 
 
 @pytest.fixture(scope="function")
+async def test_pilot_2(client):
+    async with SessionLocal() as session:
+        user_in = UserCreate(username="test_pilot_2", password="password123")
+        user = await create_user(session, user_in, Role.PI)
+        return user
+
+
+@pytest.fixture(scope="function")
 async def test_ops(client):
     """Creates a test ops user and returns the user object."""
     async with SessionLocal() as session:
@@ -69,6 +77,22 @@ async def pending_flight(client, test_pilot, auth_headers):
 
 
 @pytest.fixture(scope="function")
+async def pending_flight_pilot_2(client, test_pilot_2, auth_headers):
+    headers = await auth_headers(test_pilot_2)
+    flight = await client.post(
+        "/api/flights/",
+        json={
+            "dof": "2026-03-14T13:51:31.575",
+            "duration_min": 115,
+            "aircraft_category": "Helicopter",
+            "notes": "STD TAC TRAINING",
+        },
+        headers=headers,
+    )
+    return flight.json()
+
+
+@pytest.fixture(scope="function")
 async def approved_flight(client, auth_headers, test_ops, pending_flight):
     headers = await auth_headers(test_ops)
     approved = await client.post(
@@ -84,9 +108,7 @@ async def voided_flight(client, auth_headers, test_ops, pending_flight):
     headers = await auth_headers(test_ops)
     voided = await client.post(
         f"/api/flights/{pending_flight.get('id')}/void",
-        json={
-            "void_reason": "Wrong flight date"
-        },
+        json={"void_reason": "Wrong flight date"},
         headers=headers,
     )
     return voided.json()

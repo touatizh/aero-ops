@@ -145,3 +145,68 @@ async def test_ops_void_non_existent_flight(
         headers=headers,
     )
     assert voided.status_code == 404
+
+
+@pytest.mark.asyncio
+async def test_ops_void_flight_with_no_reason(
+    client, auth_headers, test_ops, pending_flight
+):
+    headers = await auth_headers(test_ops)
+    voided = await client.post(
+        f"/api/flights/{pending_flight.get('id')}/void",
+        json={},
+        headers=headers,
+    )
+    assert voided.status_code == 422
+
+
+@pytest.mark.asyncio
+async def test_ops_seens_all_flights(
+    client, auth_headers, test_ops, pending_flight, pending_flight_pilot_2
+):
+    headers = await auth_headers(test_ops)
+    flights = await client.get("/api/flights/", headers=headers)
+
+    assert flights.status_code == 200
+    assert flights.json().get("total") == 2
+
+
+@pytest.mark.asyncio
+async def test_pilot_sees_own_flights(
+    client, auth_headers, test_pilot, pending_flight, pending_flight_pilot_2
+):
+    headers = await auth_headers(test_pilot)
+    flights = await client.get("/api/flights/", headers=headers)
+
+    assert flights.status_code == 200
+    assert flights.json().get("total") == 1
+
+
+@pytest.mark.asyncio
+async def test_ops_get_filtered_flights(
+    client, auth_headers, test_ops, pending_flight, approved_flight
+):
+    headers = await auth_headers(test_ops)
+    flights = await client.get("/api/flights/?status=Approved", headers=headers)
+    assert flights.status_code == 200
+    assert flights.json().get("total") == 1
+
+
+@pytest.mark.asyncio
+async def test_get_detailed_flight_by_id(
+    client, auth_headers, test_ops, pending_flight, test_pilot
+):
+    headers = await auth_headers(test_ops)
+    flight = await client.get(
+        f"/api/flights/{pending_flight.get('id')}", headers=headers
+    )
+    assert flight.status_code == 200
+    assert flight.json().get("created_by")["username"] == test_pilot.username
+
+
+@pytest.mark.asyncio
+async def test_get_non_existant_flight(client, auth_headers, test_pilot):
+    headers = await auth_headers(test_pilot)
+    fake_id = "2b05c58d-7680-434a-bb05-2cf85ef32966"
+    flight = await client.get(f"/api/flights/{fake_id}", headers=headers)
+    assert flight.status_code == 404
