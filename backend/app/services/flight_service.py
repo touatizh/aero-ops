@@ -186,6 +186,5 @@ async def get_flight_count(
         query = query.where(Flight.status == status)
 
     result = await session.exec(query)
-    flights = result.all()
 
-    return len(flights)
+    return result.one()
