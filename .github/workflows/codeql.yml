@@ -1,0 +1,76 @@
+name: "CodeQL Advanced"
+
+on:
+  push:
+    branches:
+      - main
+    paths-ignore:
+      - "**.md"
+      - "**.rst"
+      - "**.txt"
+      - ".env.example"
+      - "docs/**"
+  pull_request:
+    branches:
+      - main
+    paths-ignore:
+      - "**.md"
+      - "**.rst"
+      - "**.txt"
+      - ".env.example"
+      - "docs/**"
+  schedule:
+    - cron: "30 21 * * 4"
+
+concurrency:
+  group: codeql-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  analyze:
+    name: Analyze (${{ matrix.language }})
+    runs-on: ubuntu-latest
+    permissions:
+      security-events: write
+      packages: read
+      actions: read
+      contents: read
+
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - language: actions
+            build-mode: none
+          - language: python
+            build-mode: none
+            source-root: backend
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        if: matrix.language == 'python'
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        if: matrix.language == 'python'
+        run: |
+          pip install uv
+          uv sync --directory backend
+
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@v4
+        with:
+          languages: ${{ matrix.language }}
+          build-mode: ${{ matrix.build-mode }}
+          queries: security-extended
+          source-root: ${{ matrix.source-root || '.' }}
+
+      - name: Perform CodeQL Analysis
+        uses: github/codeql-action/analyze@v4
+        with:
+          category: "/language:${{ matrix.language }}"
