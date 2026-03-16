@@ -161,7 +161,7 @@ async def test_ops_void_flight_with_no_reason(
 
 
 @pytest.mark.asyncio
-async def test_ops_seens_all_flights(
+async def test_ops_sees_all_flights(
     client, auth_headers, test_ops, pending_flight, pending_flight_pilot_2
 ):
     headers = await auth_headers(test_ops)
@@ -205,7 +205,7 @@ async def test_get_detailed_flight_by_id(
 
 
 @pytest.mark.asyncio
-async def test_get_non_existant_flight(client, auth_headers, test_pilot):
+async def test_get_non_existent_flight(client, auth_headers, test_pilot):
     headers = await auth_headers(test_pilot)
     fake_id = "2b05c58d-7680-434a-bb05-2cf85ef32966"
     flight = await client.get(f"/api/flights/{fake_id}", headers=headers)
