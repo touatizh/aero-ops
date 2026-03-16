@@ -63,9 +63,6 @@ async def approve_flight(
 ) -> Flight:
     """Approves a pending flight."""
 
-    if current_user.role != Role.OPS:
-        raise HTTPException(403, "Only OPS can approve flights.")
-
     flight = await get_flight_by_id(session=session, flight_id=flight_id)
 
     if not flight:
@@ -90,7 +87,7 @@ async def approve_flight(
     }
 
     audit_log = AuditLog(
-        action="Flight_APPROVED",
+        action="FLIGHT_APPROVED",
         actor_id=current_user.id,
         target_id=flight.id,
         details=audit_details,
@@ -108,16 +105,15 @@ async def void_flight(
 ) -> Flight:
     """Voids a flight with a reason."""
 
-    if current_user.role != Role.OPS:
-        raise HTTPException(403, "Only OPS can void flights.")
-
     flight = await get_flight_by_id(session=session, flight_id=flight_id)
 
     if not flight:
         raise HTTPException(status_code=404, detail="Flight not found")
 
-    if flight.status == FlightStatus.VOIDED:
-        raise HTTPException(status_code=400, detail="Flight is already voided")
+    if flight.status != FlightStatus.PENDING:
+        raise HTTPException(
+            status_code=400, detail=f"Cannot void flight with status: {flight.status}"
+        )
 
     flight.status = FlightStatus.VOIDED
     flight.voided_at = datetime.now(UTC).replace(tzinfo=None)
