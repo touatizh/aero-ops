@@ -2,7 +2,12 @@ from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException
 
-from app.core.dependency import get_current_user
+from app.core.dependency import require_role
+from app.core.roles import (
+    ALL_ROLES,
+    OPS,
+    PILOT_OR_OPS,
+)
 from app.db.dependency import DbSession
 from app.models.flight import FlightStatus
 from app.models.user import Role, User
@@ -32,7 +37,7 @@ router = APIRouter(prefix="/flights", tags=["Flights"])
 async def handle_create_flight(
     session: DbSession,
     data: FlightCreate,
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_role(*PILOT_OR_OPS)),
 ):
 
     # Validate pilot_id if provided (OPS creating flight for someone else)
@@ -53,7 +58,7 @@ async def handle_void_flight(
     session: DbSession,
     id: UUID,
     data: FlightVoid,
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_role(*OPS)),
 ):
 
     return await void_flight(
@@ -66,7 +71,7 @@ async def handle_approve_flight(
     session: DbSession,
     id: UUID,
     data: FlightApprove,
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_role(*OPS)),
 ):
 
     return await approve_flight(
@@ -80,7 +85,7 @@ async def handle_list_flights(
     status_filter: FlightStatus | None = None,
     page: int = 1,
     page_size: int = 10,
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_role(*ALL_ROLES)),
 ):
     skip = (page - 1) * page_size
     pilot_filter = current_user.id if current_user.role == Role.PI else None
@@ -104,7 +109,9 @@ async def handle_list_flights(
 
 
 @router.get("/{id}", response_model=FlightReadWithDetails)
-async def handle_get_flight_by_id(session: DbSession, id: UUID):
+async def handle_get_flight_by_id(
+    session: DbSession, id: UUID, current_user: User = Depends(require_role(*ALL_ROLES))
+):
     flight = await get_flight_by_id(session=session, flight_id=id)
     if flight is None:
         raise HTTPException(status_code=404, detail="Flight not found.")
