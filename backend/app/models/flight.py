@@ -34,7 +34,6 @@ class Flight(BaseModel, table=True):
     void_reason: str | None = None
     voided_by_id: UUID | None = Field(foreign_key="users.id", default=None)
 
-
     # IDs
     pilot_id: UUID = Field(foreign_key="users.id")
     created_by_id: UUID = Field(foreign_key="users.id")

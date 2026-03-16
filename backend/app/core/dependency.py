@@ -1,3 +1,4 @@
+from collections.abc import Callable
 from uuid import UUID
 
 from fastapi import Depends
@@ -6,7 +7,7 @@ from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 
 from app.core.security import decode_jwt
 from app.db.dependency import DbSession
-from app.models.user import User
+from app.models.user import Role, User
 from app.services.user_service import get_user_by_id
 
 
@@ -33,3 +34,12 @@ async def get_current_user(
         raise HTTPException(status_code=401, detail="User not found")
 
     return user
+
+
+def require_role(*roles: Role) -> Callable[..., User]:
+    def _check_role(current_user: User = Depends(get_current_user)) -> User:
+        if current_user.role not in roles:
+            raise HTTPException(status_code=403, detail="Access denied.")
+        return current_user
+
+    return _check_role
