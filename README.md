@@ -9,6 +9,9 @@
     - [Prerequisites](#prerequisites)
     - [Installation](#installation)
   - [📐 Architecture](#📐-architecture)
+  - [🔌 API Endpoints](#🔌-api-endpoints)
+    - [Authentication](#authentication)
+    - [Flight Operations](#flight-operations)
   - [🗺️ Roadmap](#🗺️-roadmap)
   - [👨‍💻 Author](#👨‍💻-author)
   - [📜 License](#📜-license)
@@ -25,9 +28,12 @@ AeroOps is a domain-driven application designed to manage pilot flight declarati
 ## 🚀 Key Features
 
 - **Domain-Driven Design:** Strict separation between API, Service, and Data layers.
+- **Role-Based Access Control (RBAC):** Fine-grained permissions for Pilot (PI), Operations (OPS), and Admin roles.
 - **Immutability by Default:** Flight records are immutable; corrections are handled via voiding and replacement workflows.
 - **Explicit Workflows:** State transitions (Pending → Approved → Voided) are enforced via domain logic, not generic updates.
+- **Complete Audit Trail:** All flight operations (creation, approval, voiding) are logged with actor tracking.
 - **Async Architecture:** Built with `FastAPI` and `SQLModel` on an async `PostgreSQL` stack.
+- **Comprehensive Testing:** Full test coverage with 22 test cases covering workflows, permissions, and edge cases.
 - **Reproducible Environment:** Fully declarative development environment using Nix Flakes.
 
 ---
@@ -40,7 +46,8 @@ AeroOps is a domain-driven application designed to manage pilot flight declarati
 - **ORM:** SQLModel (Pydantic + SQLAlchemy 2.0)
 - **Database:** PostgreSQL (Async via `asyncpg`)
 - **Migrations:** Alembic
-- **Auth:** JWT (Python-JOSE) & Argon2 hashing.
+- **Auth:** JWT (Python-JOSE) & Argon2 hashing
+- **Testing:** Pytest with async support
 
 **Infrastructure & Tooling:**
 
@@ -95,6 +102,12 @@ AeroOps is a domain-driven application designed to manage pilot flight declarati
    uv run uvicorn app.main:app --reload
    ```
 
+6. **Run Tests:**
+
+   ```bash
+   uv run pytest
+   ```
+
 Access the API documentation at: `http://127.0.0.1:8000/docs`
 
 ---
@@ -107,6 +120,44 @@ The project follows a layered architecture to ensure maintainability and testabi
 - **`app/services`**: Business logic and workflow enforcement.
 - **`app/models`**: Database table definitions (SQLModel).
 - **`app/core`**: Configuration, security, and global utilities.
+- **`tests/`**: Comprehensive test suite with fixtures for RBAC testing.
+
+**Database Schema:**
+
+```
+Users (id, username, role, is_active)
+  ↓
+Flight Logs (id, dof, duration_min, aircraft_category, status, pilot_id, created_by_id)
+  ↓
+Audit Logs (id, action, actor_id, target_id, details, created_at)
+```
+
+---
+
+## 🔌 API Endpoints
+
+### Authentication
+
+- **POST** `/api/auth/login` - User login (returns JWT access token)
+
+### Flight Operations
+
+- **POST** `/api/flights/` - Create flight log
+  - PI users: Create for themselves
+  - OPS users: Create for any pilot (requires `pilot_id`)
+
+- **POST** `/api/flights/{id}/approve` - Approve pending flight (OPS only)
+
+- **POST** `/api/flights/{id}/void` - Void flight with reason (OPS only)
+
+- **GET** `/api/flights/` - List flights with pagination and filtering
+  - PI users: See only their own flights
+  - OPS users: See all flights
+  - Query params: `status`, `page`, `page_size`
+
+- **GET** `/api/flights/{id}` - Get detailed flight information with user details
+
+**All endpoints require JWT authentication via Bearer token.**
 
 ---
 
@@ -114,10 +165,14 @@ The project follows a layered architecture to ensure maintainability and testabi
 
 - [x] Project Setup & Async DB Configuration
 - [x] Domain Models (User, Flight, AuditLog)
-- [ ] Authentication & Authorization (RBAC)
-- [ ] Flight Lifecycle Services (Approval/Voiding logic)
-- [ ] Audit Logging Implementation
+- [x] Authentication & Authorization (RBAC)
+- [x] Flight Lifecycle Services (Approval/Voiding logic)
+- [x] Audit Logging Implementation
+- [ ] Administration (User Management, Audit Log Access, Role Assignment)
 - [ ] React Frontend (Thin Client)
+- [ ] Comprehensive Test Suite
+- [ ] Deployment & CI/CD Pipeline
+- [ ] Advanced Reporting & Analytics
 
 ---
 
@@ -125,7 +180,7 @@ The project follows a layered architecture to ensure maintainability and testabi
 
 **Helmi Touati**
 
-- _Helicopter Pilot & Software Engineering._
+- _Helicopter Pilot & Software Engineer_
 - [LinkedIn](https://www.linkedin.com/in/helmi-touati-451518273) | [GitHub](https://github.com/touatizh)
 
 ---
