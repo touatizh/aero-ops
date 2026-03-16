@@ -30,9 +30,10 @@ class Flight(BaseModel, table=True):
     notes: str | None
 
     # if voided
-    voided_at: datetime | None
-    void_reason: str | None
-    voided_by_id: UUID | None = Field(foreign_key="users.id")
+    voided_at: datetime | None = None
+    void_reason: str | None = None
+    voided_by_id: UUID | None = Field(foreign_key="users.id", default=None)
+
 
     # IDs
     pilot_id: UUID = Field(foreign_key="users.id")
