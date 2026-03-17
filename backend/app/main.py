@@ -58,3 +58,4 @@ app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)  # ty
 # Register routers
 app.include_router(auth_router, prefix=settings.API_PREFIX)
 app.include_router(flight_router, prefix=settings.API_PREFIX)
+app.include_router(admin_router, prefix=settings.API_PREFIX)
