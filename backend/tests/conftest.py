@@ -1,5 +1,5 @@
 import pytest
-from sqlmodel import SQLModel
+from sqlmodel import text
 from httpx import AsyncClient, ASGITransport
 from app.db.base import init_db
 from app.main import app
@@ -12,7 +12,8 @@ from app.models import Role
 @pytest.fixture(scope="function")
 async def client():
     async with engine.begin() as conn:
-        await conn.run_sync(SQLModel.metadata.drop_all)
+        await conn.execute(text("DROP SCHEMA public CASCADE;"))
+        await conn.execute(text("CREATE SCHEMA public;"))
     await init_db()
 
     transport = ASGITransport(app)
@@ -45,6 +46,15 @@ async def test_ops(client):
     async with SessionLocal() as session:
         user_in = UserCreate(username="test_ops", password="password123")
         user = await create_user(session, user_in, Role.OPS)
+        yield user
+
+
+@pytest.fixture(scope="function")
+async def test_admin(client):
+    """Creates a test admin user and returns the user object."""
+    async with SessionLocal() as session:
+        user_in = UserCreate(username="test_admin", password="password123")
+        user = await create_user(session, user_in, Role.ADMIN)
         yield user
 
 
