@@ -24,6 +24,7 @@ from app.schemas.flight import (
     UserSummary,
 )
 from app.schemas.user import (
+    AdminUserCreate,
     UserCreate,
     UserLogin,
     UserRead,
@@ -53,6 +54,7 @@ __all__ = [
     "AuditLogReadWithDetails",
     "AuditLogListResponse",
     # User schemas
+    "AdminUserCreate",
     "UserCreate",
     "UserLogin",
     "UserUpdate",

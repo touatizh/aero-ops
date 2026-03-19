@@ -31,6 +31,12 @@ class UserUpdate(SQLModel):
     is_active: bool | None = None
 
 
+class AdminUserCreate(UserCreate):
+    """Schema for admin creating a new user."""
+
+    role: Role
+
+
 # Output Schemas
 
 
