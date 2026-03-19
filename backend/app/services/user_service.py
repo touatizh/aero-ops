@@ -5,10 +5,14 @@ from sqlmodel import func, select
 from sqlmodel.ext.asyncio.session import AsyncSession
 
 from app.core.security import hash_password
-from app.models import Role, User
-from app.models.flight import Flight, FlightStatus
-from app.schemas import UserCreate, UserRead
-from app.schemas.user import UserReadWithStats, UserUpdate
+from app.models import Flight, FlightStatus, Role, User
+from app.schemas import (
+    AdminUserCreate,
+    UserCreate,
+    UserRead,
+    UserReadWithStats,
+    UserUpdate,
+)
 
 
 async def get_user_by_username(session: AsyncSession, username: str) -> User | None:
@@ -28,7 +32,7 @@ async def get_user_by_id(session: AsyncSession, user_id: UUID) -> User | None:
 
 
 async def create_user(
-    session: AsyncSession, user: UserCreate, role: Role | None = None
+    session: AsyncSession, user: UserCreate | AdminUserCreate
 ) -> User:
     """Creates a new user in the database and returns the User model."""
 
@@ -38,8 +42,8 @@ async def create_user(
         username=user.username,
         hashed_pwd=hashed_pwd,
     )
-    if role:
-        new_user.role = role
+    if isinstance(user, AdminUserCreate):
+        new_user.role = user.role
 
     session.add(new_user)
     await session.commit()
