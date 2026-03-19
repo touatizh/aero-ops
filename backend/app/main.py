@@ -11,7 +11,7 @@ from app.core.config import settings
 from app.db.base import init_db
 from app.db.session import SessionLocal
 from app.models import Role
-from app.schemas import UserCreate
+from app.schemas import AdminUserCreate
 from app.services.user_service import create_user, get_user_by_username
 
 
@@ -23,12 +23,13 @@ async def lifespan(app: FastAPI):
             session=session, username=settings.FIRST_SUPERUSER_USERNAME
         )
         if not user:
-            admin_user: UserCreate = UserCreate(
+            admin_user: AdminUserCreate = AdminUserCreate(
                 username=settings.FIRST_SUPERUSER_USERNAME,
                 password=settings.FIRST_SUPERUSER_PASSWORD.get_secret_value(),
+                role=Role.ADMIN,
             )
             try:
-                await create_user(session=session, user=admin_user, role=Role.ADMIN)
+                await create_user(session=session, user=admin_user)
             except Exception as e:
                 print("Unable to seed admin user.", e)
             else:
