@@ -1,13 +1,12 @@
 from math import ceil
 from uuid import UUID
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException
 
 from app.core.dependency import require_role
 from app.core.roles import ADMIN, OPS_OR_ADMIN
 from app.db.dependency import DbSession
-from app.models import User
-from app.models.user import Role
+from app.models import Role, User
 from app.schemas import (
     AdminUserCreate,
     FlightStatistics,
@@ -20,6 +19,7 @@ from app.services.flight_service import get_all_flights_statistics
 from app.services.user_service import (
     create_user,
     get_all_users,
+    get_user_by_username,
     get_user_with_stats,
     get_users_count,
     update_user,
@@ -79,6 +79,12 @@ async def handle_create_user(
     user_data: AdminUserCreate,
     current_user: User = Depends(require_role(*ADMIN)),
 ):
+    already_exists = await get_user_by_username(
+        session=session, username=user_data.username
+    )
+    if already_exists:
+        raise HTTPException(status_code=400, detail="username already taken.")
+
     new_user = await create_user(
         session=session,
         user=user_data,
