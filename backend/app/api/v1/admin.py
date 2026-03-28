@@ -9,16 +9,25 @@ from app.db.dependency import DbSession
 from app.models import Role, User
 from app.schemas import (
     AdminUserCreate,
+    AuditLogRead,
+    AuditLogReadWithDetails,
     FlightStatistics,
     PaginatedResponse,
     UserRead,
     UserReadWithStats,
     UserUpdate,
 )
+from app.services.audit_service import (
+    get_audit_log_by_id,
+    get_audit_log_count,
+    get_audit_logs,
+    get_target_type_from_action,
+)
 from app.services.flight_service import get_all_flights_statistics
 from app.services.user_service import (
     create_user,
     get_all_users,
+    get_user_by_id,
     get_user_by_username,
     get_user_with_stats,
     get_users_count,
@@ -101,3 +110,59 @@ async def handle_update_user(
 ):
     updated_user = await update_user(session=session, user_id=id, update=user_data)
     return UserRead(**updated_user.model_dump())
+
+
+@router.get("/audit/logs", response_model=PaginatedResponse[AuditLogRead])
+async def handle_get_audit_logs(
+    session: DbSession,
+    current_user: User = Depends(require_role(*ADMIN)),
+    page: int = 1,
+    page_size: int = 10,
+    actor_filter: UUID | None = None,
+    target_filter: UUID | None = None,
+    action_filter: str | None = None,
+):
+    skip = (page - 1) * page_size
+    logs_list = await get_audit_logs(
+        session=session,
+        skip=skip,
+        limit=page_size,
+        actor_filter=actor_filter,
+        target_filter=target_filter,
+        action_filter=action_filter,
+    )
+    total_logs = await get_audit_log_count(
+        session=session,
+        actor_filter=actor_filter,
+        target_filter=target_filter,
+        action_filter=action_filter,
+    )
+    return PaginatedResponse(
+        total=total_logs,
+        page=page,
+        page_size=page_size,
+        total_pages=ceil(total_logs / page_size),
+        items=logs_list,
+    )
+
+
+@router.get("/audit/logs/{id}", response_model=AuditLogReadWithDetails)
+async def handle_get_detailed_audit_log(
+    session: DbSession,
+    id: UUID,
+    current_user: User = Depends(require_role(*ADMIN)),
+):
+    log = await get_audit_log_by_id(session=session, id=id)
+    if not log:
+        raise HTTPException(status_code=404, detail="Audit log not found")
+
+    actor = await get_user_by_id(session=session, user_id=log.actor_id)
+    if not actor:
+        raise HTTPException(status_code=404, detail="Audit log actor not found")
+
+    actor_username = actor.username
+    target_type = get_target_type_from_action(log.action)
+
+    return AuditLogReadWithDetails(
+        **log.model_dump(), actor_username=actor_username, target_type=target_type
+    )
