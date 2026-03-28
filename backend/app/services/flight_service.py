@@ -3,13 +3,13 @@ from uuid import UUID
 
 from fastapi.exceptions import HTTPException
 from sqlalchemy import func
-from sqlmodel import select
+from sqlmodel import col, select
 from sqlmodel.ext.asyncio.session import AsyncSession
 
 from app.models.audit import AuditLog
-from app.models.flight import Flight, FlightStatus
+from app.models.flight import AircraftCategory, Flight, FlightStatus
 from app.models.user import Role, User
-from app.schemas.flight import FlightCreate, FlightVoid
+from app.schemas.flight import FlightCreate, FlightStatistics, FlightVoid
 
 
 async def get_flight_by_id(session: AsyncSession, flight_id: UUID) -> Flight | None:
@@ -184,3 +184,51 @@ async def get_flight_count(
     result = await session.exec(query)
 
     return result.one()
+
+
+async def get_all_flights_statistics(
+    session: AsyncSession,
+) -> FlightStatistics:
+
+    count_by_status_rows = await session.exec(
+        select(Flight.status, func.count()).select_from(Flight).group_by(Flight.status)
+    )
+    count_by_category_rows = await session.exec(
+        select(Flight.aircraft_category, func.count())
+        .select_from(Flight)
+        .group_by(Flight.aircraft_category)
+    )
+    count_by_pilot_rows = await session.exec(
+        select(User.username, func.count())
+        .select_from(Flight)
+        .join(User, col(Flight.pilot_id) == col(User.id))
+        .group_by(User.username)
+    )
+    total_durations = await session.exec(
+        select(func.sum(Flight.duration_min)).select_from(Flight)
+    )
+
+    count_by_status = {s[0]: s[1] for s in count_by_status_rows.all()}
+    flights_by_category = {cat.value: 0 for cat in AircraftCategory}
+    for cat, count in count_by_category_rows.all():
+        flights_by_category[cat] = count
+    total_durations_scalar = total_durations.one()
+
+    total_flights = sum(count_by_status.values())
+    total_hours = total_durations_scalar // 60 if total_durations_scalar else 0
+    pending_flights = count_by_status.get(FlightStatus.PENDING, 0)
+    approved_flights = count_by_status.get(FlightStatus.APPROVED, 0)
+    voided_flights = count_by_status.get(FlightStatus.VOIDED, 0)
+    count_by_pilot = {p[0]: p[1] for p in count_by_pilot_rows.all()}
+
+    payload = {
+        "total_flights": total_flights,
+        "total_hours": total_hours,
+        "pending_flights": pending_flights,
+        "approved_flights": approved_flights,
+        "voided_flights": voided_flights,
+        "flights_by_aircraft_category": flights_by_category,
+        "flights_by_pilot": count_by_pilot,
+    }
+
+    return FlightStatistics(**payload)

@@ -36,6 +36,7 @@ backend/app/schemas/
 **Input Schemas:**
 
 - `UserCreate` - Create new user (username, password)
+- `AdminUserCreate` - Create new user with role assignment (admin only, extends UserCreate)
 - `UserLogin` - User authentication (username, password)
 - `UserUpdate` - Update user (all optional fields for PATCH)
 
@@ -158,6 +159,7 @@ async def login(credentials: UserLogin):
 # Import from root schemas package
 from app.schemas import (
     UserCreate,
+    AdminUserCreate,
     UserRead,
     FlightCreate,
     FlightRead,

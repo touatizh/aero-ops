@@ -1,10 +1,10 @@
 import pytest
-from sqlmodel import SQLModel
+from sqlmodel import text
 from httpx import AsyncClient, ASGITransport
 from app.db.base import init_db
 from app.main import app
 from app.db.session import engine, SessionLocal
-from app.schemas import UserCreate
+from app.schemas import AdminUserCreate, UserCreate
 from app.services.user_service import create_user
 from app.models import Role
 
@@ -12,7 +12,8 @@ from app.models import Role
 @pytest.fixture(scope="function")
 async def client():
     async with engine.begin() as conn:
-        await conn.run_sync(SQLModel.metadata.drop_all)
+        await conn.execute(text("DROP SCHEMA public CASCADE;"))
+        await conn.execute(text("CREATE SCHEMA public;"))
     await init_db()
 
     transport = ASGITransport(app)
@@ -27,7 +28,7 @@ async def test_pilot(client):
     """Creates a test pilot and returns the user object."""
     async with SessionLocal() as session:
         user_in = UserCreate(username="test_pilot", password="password123")
-        user = await create_user(session, user_in, Role.PI)
+        user = await create_user(session, user_in)
         yield user
 
 
@@ -35,7 +36,7 @@ async def test_pilot(client):
 async def test_pilot_2(client):
     async with SessionLocal() as session:
         user_in = UserCreate(username="test_pilot_2", password="password123")
-        user = await create_user(session, user_in, Role.PI)
+        user = await create_user(session, user_in)
         return user
 
 
@@ -43,8 +44,17 @@ async def test_pilot_2(client):
 async def test_ops(client):
     """Creates a test ops user and returns the user object."""
     async with SessionLocal() as session:
-        user_in = UserCreate(username="test_ops", password="password123")
-        user = await create_user(session, user_in, Role.OPS)
+        user_in = AdminUserCreate(username="test_ops", password="password123", role=Role.OPS)
+        user = await create_user(session, user_in)
+        yield user
+
+
+@pytest.fixture(scope="function")
+async def test_admin(client):
+    """Creates a test admin user and returns the user object."""
+    async with SessionLocal() as session:
+        user_in = AdminUserCreate(username="test_admin", password="password123", role=Role.ADMIN)
+        user = await create_user(session, user_in)
         yield user
 
 
