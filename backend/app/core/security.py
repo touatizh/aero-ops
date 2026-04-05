@@ -1,8 +1,8 @@
 import uuid
 from datetime import UTC, datetime, timedelta
 
+import jwt
 from fastapi import HTTPException
-from jose import jwt
 from passlib.context import CryptContext
 
 from app.core.config import settings
@@ -30,17 +30,16 @@ def verify_password(plain_password: str, hashed_password: str) -> bool:
     return pwd_context.verify(plain_password, hashed_password)
 
 
-def decode_jwt(token: str, options: dict | None = None) -> dict:
+def decode_jwt(token: str) -> dict:
     try:
         payload = jwt.decode(
             token,
             settings.JWT_SECRET_KEY.get_secret_value(),
             algorithms=[settings.JWT_ALGORITHM],
-            options=options if options else {},
         )
         return payload
-    except Exception as e:
-        raise HTTPException(status_code=401, detail=str(e))
+    except jwt.PyJWTError:
+        raise HTTPException(status_code=401, detail="Could not validate credentials")
 
 
 def generate_user_tokens(user_id: str, user_role: str) -> dict[str, str | int]:
@@ -72,7 +71,6 @@ def _get_access_token(user_id: str, user_role: str) -> tuple[str, int]:
         settings.JWT_SECRET_KEY.get_secret_value(),
         algorithm=settings.JWT_ALGORITHM,
     )
-    token = token if isinstance(token, str) else token.decode("utf-8")
     return token, int(exp.timestamp())
 
 
@@ -87,6 +85,4 @@ def _get_refresh_token(user_id: str) -> tuple[str, int, str]:
         settings.JWT_SECRET_KEY.get_secret_value(),
         algorithm=settings.JWT_ALGORITHM,
     )
-    token = token if isinstance(token, str) else token.decode("utf-8")
-
     return token, int(exp.timestamp()), jti
